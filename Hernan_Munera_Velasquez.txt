@@ -1,0 +1,42 @@
+plsql.execute <<-SQL
+create table amortizacion (
+  numero_cuota integer,
+  cuota_mensual decimal(15,2),
+  abono_capital decimal(15,2),
+  abono_interes decimal(15,2),
+  saldo decimal(15,2)
+)
+
+CREATE OR REPLACE PROCEDURE CALCULAR_SIMULACION (Tasa_Efectiva_Anual in decimal,Numero_Cuotas in Integer,Valor_Prestamo in Decimal) AS
+Nuevo_Saldo  Decimal;
+cuota_mensual Decimal :=0;
+tasa_nominal_mensual decimal :=0;
+Saldo_Anterior Decimal := 0;
+Abono_Capital Decimal := 0;
+Abono_Interes Decimal := 0;
+BEGIN
+    DELETE  FROM amortizacion;
+    
+    FOR k IN 1..Numero_Cuotas LOOP
+        cuota_mensual := (Tasa_Efectiva_Anual * Valor_Prestamo)/(1 -(1 + Tasa_Efectiva_Anual)**(Numero_Cuotas));
+        tasa_nominal_mensual := (1 + (Tasa_Efectiva_Anual / 100)) ** (30 / 360) - 1;
+        Nuevo_Saldo :=  Saldo_Anterior - Abono_Capital;
+        Abono_Interes := Tasa_Efectiva_Anual * Nuevo_Saldo;
+        Abono_Capital := cuota_mensual - Abono_Interes;
+        Saldo_Anterior := Nuevo_Saldo;
+        
+       INSERT INTO AMORTIZACION (numero_cuota,cuota_mensual,abono_capital,abono_interes,saldo) values (k, cuota_mensual,Abono_Capital,Abono_Interes,saldo); 
+       
+    END LOOP;        
+END
+#SQL
+
+#plsql.execute <<-SQL
+CREATE OR REPLACE VIEW PLAN_AMORTIZACION AS
+    SELECT * FROM AMORTIZACION 
+    ORDER BY NUMERO_CUOTA
+#SQL
+
+#plsql.execute <<-SQL
+# Codigo va acá
+#SQL
